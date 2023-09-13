@@ -1,0 +1,232 @@
+---
+title: 'Tutorial 2: Summary statistics'
+author: "Elizabeth A. Albright, PhD, Nicholas School of the Environment"
+output:
+  word_document: default
+  html_document:
+    df_print: paged
+---
+
+Welcome to ENV710 R Tutorial 2: Descriptive Statistics. In this module we will work on the following:
+
+1. A bit about R Notebooks
+2. Installing Packages and Loading libraries
+3. Working directories
+4. Importing data from the World Bank 
+5. Summary statistics
+6. Inline R code
+
+
+
+## A bit about R Notebooks
+
+Before we get started, though, let's chat a little bit about R Notebook. R Notebook (made of R markdown language) is one way to interact with R through R Studio. The advantage of R Notebook is that it allows you to integrate discussion of your results/output with the R code itself so you can make reproducible reports. You could also just type in functions in the console below to run the same functions, but then you wouldn't have a clean/easy format to work with the output. R Notebook allows for this. I encourage you to read more about R Notebook here: https://bookdown.org/yihui/rmarkdown/notebook.html.
+
+At the top of the R Notebook between the dashed lines, you see what is called the YAML header and you can change for the Notebook in the header. The first line of the YAML header is the title of the document. Please go ahead and change this as well as the author name. You can select what kind of output you want when you knit the document. I would like you to submit your reports in Word, so you will want to set that as an option. 
+
+For those interested, here is more about YAML headers (headers can be important if you start adding mathematical formulas to your notebooks with LaTeX or if you want to specify where figures show up in the Notebook): https://zsmith27.github.io/rmarkdown_crash-course/lesson-4-yaml-headers.html
+
+If you go to the gear pull down menu above, you can play around with the options. At the bottom of the pull down menu options is Output Options. Make sure that Word is selected. We won't worry about .pdf at this point (perhaps next week!). You can also decide if you want to see the output from the chunks inline (below the chunk) or in the console. Please select Chunk Output Inline. This will allow us to see the output in the document we knit.   
+
+
+## Install packages and load the libraries. 
+
+This tutorial will use a number of packages,so be sure that you have installed all of these packages in the console with the function install.packages().
+
+**wbstats**: a package that enables you to pull data directly from the World Bank.
+**moments**: calculates skewness and kurtosis
+**dplyr**: a package that allows you to wrangle/manipulate data. 
+**tidyr**: a package that allows us to pivot the data
+ 
+
+If you haven't installed the packages, you will need to do that first. To install packages, you'll need to type install.packages("NameOfPackage") in the console. I typically do this in the console because once you do it, you don't need to repeat it, so therefore I don't need that command stored in my notebook. However, you will need to load the packages each time, so I always start my Rmd with an R chunk that I call library. See how I named the chunk below "library"? That is the name following r in the curly brackets. You can name your chunks anything (or not name them at all). You can NOT use the same name for multiple chunks.  
+
+```{r library, message=FALSE}
+library(wbstats) # a package that enables us to import data from the World Bank.
+library(moments) # allows us to calculate skewness and kurtosis
+library(dplyr) # a package that helps us wrangle/manage data
+library(tidyr) # a package that allows us to pivot the data
+```
+ 
+
+**Bonus**: Later in the semester, I can give you code that installs and loads all of your packages together, but to run this code, we should first understand "iteration" which we will cover later. Ask for this code later if you are interested in it. 
+
+## The working directory
+
+To figure out the current working directory (where R will read and store files), you should use the function getwd(). You don't need to put anything in the brackets (no arguments). The working directory is where R is storing and reading files. It makes things smoother if all files are stored in one place.  
+
+If you would like to change the working directory, use the function setwd(). You'll need to change the pathname to the appropriate path on your machine. If is often best to store your data in the same folder that your R Notebook is stored. So please File->Save As your Notebook to this folder so it's all in one place. 
+
+Working directories can be confusing for new users so if you don't know where you want to save your files based on a pathname you can alternatively do this process manually with Rstudio. Go to `Session > Set Working Directory > Chose Directory` and then find the folder on your computer where you want to save this work. After you select the appropriate directory Rstudio will run the `setwd()` code for you in the console. To save this code, copy-paste the `setwd()` command into your Notebook so you can re-run the code without repeating this manual process in the future. You may also notice that you could save your Rmarkdown file to a folder first and then set the working directory to that folder location by `Session > Set Working Directory > To Source File Location`.
+
+```{r setwd, echo=FALSE}
+getwd() # tells you the current working directory
+# if you want to change the directory, use setwd(). You need to remove the # in the line below and change the pathname. 
+#setwd('C:/')
+```
+
+
+## Importing data from the World Bank
+
+In the following chunk we pull five indicators directly from the World Bank database. Please check out the website: https://data.worldbank.org/. We will pull in: (1) life expectancy at birth, total years (SP.DYN.LE00.IN), (2) GDP per capita, current USD (NY.GDP.PCAP.CD), (3) total population (SP.POP.TOTL), (4) percent urban population (%), (SP.URB.TOTL.IN.ZS) and (5) access to electricity (% of population) (EG.ELC.ACCS.ZS). The chunk will pull these indicators in 2020 and name the tibble wb_data. The function to pull the data is wb_data(), with the arguments indicator, country, start_date, and end_date. This will take a few seconds to pull all the data.  
+
+Functions in the chunk below:
+
+**wb_data()**: pulls the data from the World Bank. Arguments are indicator, country, start_date, end_date
+
+```{r wbdata}
+wb_data <-
+  # pull the country data down from the World Bank - five indicators
+  wb_data(
+    indicator = c("SP.DYN.LE00.IN", "NY.GDP.PCAP.CD", "SP.POP.TOTL", 
+                  "SP.URB.TOTL.IN.ZS", "EG.ELC.ACCS.ZS"), 
+    country = "countries_only", 
+    start_date = 2020, 
+    end_date = 2020
+  )
+```
+
+
+We can look quickly at the data using the dplyr function `glimpse()`. This is similar to the base R function `str()`. 
+
+```{r glimpse}
+glimpse(wb_data)
+```
+
+You can see that there are nine columns (variables) in 'wb_data' and 217 countries. The first three variables are character strings and the last six are double. Doubles are a type of numeric data. 
+
+We can also look at the top or the data by using the head() function. By default, head() shows the first six rows of data.
+
+```{r head}
+head(wb_data)
+```
+
+Repeat the code above, but add an argument so you see the top ten rows of data. 
+
+```{r}
+
+```
+
+
+We can also look at the bottom of the dataset by using the function tail(). So cool! 
+
+```{r}
+tail(wb_data, 10)
+```
+
+
+## Rename variables
+
+One of the first things I often do with data is rename variables so they make sense to me. There are some upsides to doing this, but also potential downsides (what if I mess up the renaming?). For me, I like to rename variables so they are clear to me. 
+
+(1) SP.DYN.LE00.IN rename to life_expect 
+(2) NY.GDP.PCAP.CD rename to gdp_pc
+(3) SP.POP.TOTL rename to pop_tot
+(4) EG.ELC.ACCS.ZS rename to electricity_access
+(5) SP.URB.TOTL.IN.ZS rename to urban_pop
+
+There are multiple ways to rename variables. We will use the package dplyr to rename the variables. More specifically, we will use the rename() function. The arguments are (the tibble/data frame, new name = old name). We are assigning the tibble with the new names back to wb_data. We do this so the new names are saved in wb_data.
+
+**Hint**: if you are ever wondering what the arguments are for a function you can type `?functionname` in the console. In this case I would type `?rename()`. 
+
+```{r}
+wb_data<-rename(wb_data, life_expect = SP.DYN.LE00.IN, 
+                gdp_pc=NY.GDP.PCAP.CD
+                )
+head(wb_data)
+```
+
+
+**Note**: You could also use `rename()` with pipes. The pipe is %>% and it passes along the output of a function as an argument to the next function. So in the chunk below (reading right to left), we are renaming the variable EG.ELC.ACCS.ZS and calling it electricity_access. We are doing that with the wb_data tibble. We are saving the output to the wb_data tibble using the assignment <-. 
+
+```{r rename_ea}
+wb_data <- wb_data %>% rename(electricity_access = EG.ELC.ACCS.ZS)
+head(wb_data)
+```
+
+**Reminder**: for the below code to work you need to rename (4) EG.ELC.ACCS.ZS rename to `electricity_access`
+
+In the chunk below rename the remaining variables. What variables have already been renamed? What variables do we need to rename? 
+
+```{r}
+
+```
+
+
+## Summary statistics
+
+From the last tutorial you should remember that we ran summary statistics on several measures of central tendency and spread. We will do the same here for the variable electricity_access. You should insert two code chunks and run the same for life_expect and gdp_pc. You can see that I used the argument na.rm=TRUE. This tells R to remove any missing values (NA) from the analysis (rm=remove).  
+
+```{r}
+length(wb_data$electricity_access)
+quantile(wb_data$electricity_access, 0.75, na.rm=TRUE)
+mean(wb_data$electricity_access, na.rm=TRUE)
+median(wb_data$electricity_access, na.rm=TRUE)
+sd(wb_data$electricity_access, na.rm=TRUE)
+IQR(wb_data$electricity_access, na.rm=TRUE)
+range(wb_data$electricity_access, na.rm=TRUE)
+skewness(wb_data$electricity_access, na.rm=TRUE)
+```
+
+
+Looks good, but the output is a little confusing because we don't know what is what based on the output. We could also use the package dplyr and the verb (or function) `summarise()`. The function `summarise()` is used to calculate summary statistics on variables.You can read more about summarise [here]:https://www.statology.org/summary-statistics-in-r-dplyr/.
+
+```{r summary.stats.ea}
+ea.summary<-wb_data%>%  # We are making a table of summary statistics called ea.summary. 
+                              # We are using the data in wb_data.
+  summarise(min=min(electricity_access, na.rm=TRUE),  #Calculates the minimum of electricity access and calls it min.
+            max=max(electricity_access, na.rm=TRUE),  #Calculates the maximum value of electricity_access and calls it max.
+            mean=mean (electricity_access, na.rm=TRUE),
+            stdev=sd(electricity_access, na.rm=TRUE),
+            q25=quantile(electricity_access, 0.25, na.rm=TRUE),
+            q75=quantile(electricity_access, 0.75, na.rm=TRUE),
+            skewness=skewness(electricity_access, na.rm=TRUE))
+
+
+ea.summary  # our new summary statistics table called summary.stats.ea.
+```
+
+In the chunk below, please make a summary statistics table for the urban population variable (urban_pop). Name the summary statistics table up.summary. 
+ 
+```{r}
+
+```
+
+**BONUS**
+
+We could calculate summary statistics on all of the variables at the same time using dplyr. Please check out the website [here]: https://www.statology.org/summary-statistics-in-r-dplyr/. 
+
+```{r bonus}
+
+```
+
+
+## We can discuss the summary statistics in a paragraph using inline R
+
+R Notebook allows us to use inline R code as we report our results. To use R inline, you need to put a tick mark followed by the letter r, then the code you want, then close with a tick mark. The tick mark is typically located in the upper left of the keyboard, under the escape button. Here's an example: 
+
+**Across 217 nations, the average percent of the population that lives in urban areas is `r mean(wb_data$urban_pop, na.rm=TRUE)`%.** 
+
+
+
+Go ahead and knit it! Do you see the output of this sentence in Word?
+
+As you look over the Word doc, you will see that there are way too many significant digits that are reported. Please report the appropriate number of digits--in this case I would feel comfortable reporting to one or two decimal places. So how can we do this? There is a round function in R round(). So let's try this `r round(mean(wb_data$urban_pop, na.rm=TRUE), 2)`. Go ahead and knit and see what happens. The mean should be reported to two decimal places. **Now that you know how to round the summary statistics, how could you edit the summary statistics table to in the chunks above?**  
+
+
+It's good practice not to type in the numeric results directly in the .Rmd (such as "the mean is 86.95%"). If we find a mistake in the data or have to rerun it, we then have to go back and make changes. This is a pain in the neck and is often an error-prone process. We want to avoid this if at all possible. Inline code is one of the advantages of running R in a notebook with Rmd.  
+
+Now it is your turn to practice. Write a few sentences discussing the summary statistics for life expectancy. Be sure to use inline R. This should NOT be in an R chunk. Be sure to include measures of central tendency and spread.  
+
+
+Congratulations, you have finished Tutorial 2! Before you close out, let's be sure to save the data as .RData. This will allow us to load this data for future tutorials (such as Tutorial 3!). 
+
+We can save the entire workspace (all of the objects that we created) using the function save.image(). We will call it Tutorial2.RData. 
+
+```{r}
+save.image(file = "Tutorial2.RData")
+```
+
+
+
+
